@@ -1,9 +1,24 @@
+use chrono::prelude::*;
 use hdlc::*;
+use serde_json::json;
 use std::error::Error;
 use std::{
     io::{Read, Write},
     process,
 };
+
+fn value_as_json(value: u32) -> String {
+    let output = json!({
+        "items" : [
+            {
+                "timestamp": Utc::now().timestamp_millis(),
+                "value": value
+            }
+        ],
+        "externalId": "amsreading"
+    });
+    output.to_string()
+}
 
 fn read() -> Result<Vec<u8>, Box<dyn Error>> {
     let mut s = std::io::stdin();
@@ -26,13 +41,13 @@ fn extract_reading() -> Result<(), Box<dyn Error>> {
         match packet_type {
             0x1 => {
                 let value = u32::from_be_bytes(decoded[30..34].try_into()?);
-                std::io::stdout().write_all(value.to_string().as_bytes())?
+                std::io::stdout().write_all(value_as_json(value).as_bytes())?
             }
             0x9 | 0xC | 0xD | 0x0E | 0x11 | 0x12 => {
                 let value = u32::from_be_bytes(decoded[97..101].try_into()?);
-                std::io::stdout().write_all(value.to_string().as_bytes())?
+                std::io::stdout().write_all(value_as_json(value).as_bytes())?
             }
-            _ => std::io::stdout().write_all(b"No match")?,
+            _ => process::exit(1),
         }
     }
     Ok(())
