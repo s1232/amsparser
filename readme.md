@@ -1,6 +1,6 @@
 ## Power meter HDLC parser
 
-Small, naive command line tool that accepts a HDLC frame from a certain automatic power meter as a byte arreay and returns a json string containing the current power consumption and a timestamp, suitable for a POST request to Cognite's API for writing data points:
+Small, naive command line tool that accepts a HDLC frame from a certain automatic power meter as a byte array and returns a json string containing the current power consumption and a timestamp, suitable for a POST request to Cognite's API for writing data points:
 
 
 ```
