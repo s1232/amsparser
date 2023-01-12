@@ -11,11 +11,14 @@ fn value_as_json(value: u32) -> String {
     let output = json!({
         "items" : [
             {
-                "timestamp": Utc::now().timestamp_millis(),
-                "value": value
+                "datapoints": [
+                    {
+                        "timestamp": Utc::now().timestamp_millis(),
+                        "value": value
+                    }],
+                "externalId":"amsreading"
             }
-        ],
-        "externalId": "amsreading"
+        ]
     });
     output.to_string()
 }
@@ -31,7 +34,10 @@ fn extract_reading() -> Result<(), Box<dyn Error>> {
     let input = read()?;
     let decoded = decode(&input, SpecialChars::default());
     if decoded.is_err() {
-        return Err("Could not read input")?;
+        return Err(format!(
+            "HDLC decoding failed: {:?}",
+            decoded.err().unwrap()
+        ))?;
     }
     let decoded = decoded.unwrap();
     let control_byte = &decoded[5];
@@ -47,14 +53,17 @@ fn extract_reading() -> Result<(), Box<dyn Error>> {
                 let value = u32::from_be_bytes(decoded[97..101].try_into()?);
                 std::io::stdout().write_all(value_as_json(value).as_bytes())?
             }
-            _ => process::exit(1),
+            _ => Err("No valid packed type found")?,
         }
+    } else {
+        return Err("Control byte 0x13 missing")?;
     }
     Ok(())
 }
 
 fn main() {
-    if let Err(_) = extract_reading() {
+    if let Err(e) = extract_reading() {
+        eprintln!("{:?}", e);
         process::exit(1);
     }
 }
